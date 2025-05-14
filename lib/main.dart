@@ -27,7 +27,7 @@ class _LoginPageState extends State<LoginPage> {
   void handleLogin() {
     String password = passwordController.text;
 
-    setState(() {
+    setState(() {//step 4-5
       if (password == 'QWERTY123') {
         imageSource = 'images/idea.jpg';
       } else {
@@ -59,15 +59,15 @@ class _LoginPageState extends State<LoginPage> {
                 labelText: 'Password',
                 border: OutlineInputBorder(),
               ),
-              obscureText: true,
+              obscureText: true,//step 1
             ),
             SizedBox(height: 24),
-            ElevatedButton(
+            ElevatedButton(//step 2
               onPressed: handleLogin,
               child: Text('Login'),
             ),
             SizedBox(height: 24),
-            Image.asset(
+            Image.asset(//step 3
               imageSource,
               width: 300,
               height: 300,
