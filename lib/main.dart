@@ -54,16 +54,26 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  double _counter = 0.00; //Step 1
+  var _counter = 0.00; //Step 1
   double myFontSize = 30.0;//Step 3
 
-
+  double checkCounter(double value){
+    if (value > 100){
+      value = 100;
+    return value;
+    }
+    else{
+    return value;
+    }
+  }
   void setNewValue(double value)
   {
     setState(() {
-      _counter = value;
+      ;
+      _counter = checkCounter(value);
     });
   }
+
 
   void _incrementCounter() {
     setState(() {
@@ -72,6 +82,9 @@ class _MyHomePageState extends State<MyHomePage> {
       // so that the display can reflect the updated values. If we changed
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
+      if (_counter > 99){
+        setNewValue(99);
+      }
       _counter++;
     });
   }
@@ -116,7 +129,8 @@ class _MyHomePageState extends State<MyHomePage> {
             Text('You have pushed the button this many times:',style:TextStyle(fontSize: _counter + myFontSize )),
             Text(
               '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style:
+                TextStyle(fontSize: _counter + myFontSize)
             ),
             Slider(value:_counter, max:100.0, onChanged: setNewValue, min:0.0 ) // Step 4
           ],
