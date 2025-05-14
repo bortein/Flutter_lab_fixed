@@ -29,9 +29,9 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() {
       if (password == 'QWERTY123') {
-        imageSource = 'images/light-bulb.jpg';
+        imageSource = 'images/idea.jpg';
       } else {
-        imageSource = 'images/stop-sign.jpg';
+        imageSource = 'images/stop.jpg';
       }
     });
   }
@@ -53,7 +53,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             SizedBox(height: 16),
-            Image.asset("images/31.jpg"),
             TextField(
               controller: passwordController,
               decoration: InputDecoration(
