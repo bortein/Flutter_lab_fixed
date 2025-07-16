@@ -1,0 +1,30 @@
+Subject: [PATCH] Testing
+---
+Index: lib/main.dart
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lib/main.dart b/lib/main.dart
+--- a/lib/main.dart	(revision 330b5d2d82a5f65587447e131664aa2cb8c5be28)
++++ b/lib/main.dart	(revision dab2378c9404ee53819e20d5ed9ee10bb18824b0)
+@@ -29,9 +29,9 @@
+ 
+     setState(() {
+       if (password == 'QWERTY123') {
+-        imageSource = 'images/light-bulb.jpg';
++        imageSource = 'images/idea.jpg';
+       } else {
+-        imageSource = 'images/stop-sign.jpg';
++        imageSource = 'images/stop.jpg';
+       }
+     });
+   }
+@@ -53,7 +53,6 @@
+               ),
+             ),
+             SizedBox(height: 16),
+-            Image.asset("images/31.jpg"),
+             TextField(
+               controller: passwordController,
+               decoration: InputDecoration(
