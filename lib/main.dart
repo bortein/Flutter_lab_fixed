@@ -38,6 +38,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late TextEditingController _quantityController;
 
   List<ShoppingItem> items = [];
+  ShoppingItem? selectedItem;
 
   @override
   void initState() {
@@ -59,13 +60,28 @@ class _MyHomePageState extends State<MyHomePage> {
     await dao.insertItem(newItem);
     _itemController.clear();
     _quantityController.clear();
-    _loadItems();
+    await _loadItems();
   }
 
   Future<void> _deleteItem(ShoppingItem item) async {
     final dao = widget.database.itemDao;
     await dao.deleteItem(item);
-    _loadItems();
+    setState(() {
+      if (selectedItem?.id == item.id) selectedItem = null;
+    });
+    await _loadItems();
+  }
+
+  void _selectItem(ShoppingItem item) {
+    setState(() {
+      selectedItem = item;
+    });
+  }
+
+  void _closeDetails() {
+    setState(() {
+      selectedItem = null;
+    });
   }
 
   @override
@@ -77,78 +93,113 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _itemController,
-                  decoration: InputDecoration(labelText: 'Item'),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _quantityController,
-                  decoration: InputDecoration(labelText: 'Quantity'),
-                ),
-              ),
-              ElevatedButton(
-                child: Text("Add"),
-                onPressed: () {
-                  final name = _itemController.text.trim();
-                  final qty = _quantityController.text.trim();
-                  if (name.isNotEmpty && qty.isNotEmpty) {
-                    _addItem(name, qty);
-                  }
-                },
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          Expanded(
-            child: items.isEmpty
-                ? Center(child: Text("No items added."))
-                : ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (_, index) {
-                final item = items[index];
-                return GestureDetector(
-                  onLongPress: () => _confirmDelete(item),
-                  child: Card(
-                    child: ListTile(
-                      title: Text(item.name),
-                      trailing: Text('Qty: ${item.quantity}'),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isWide = constraints.maxWidth >= 600;
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.title)),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _itemController,
+                      decoration: InputDecoration(labelText: 'Item'),
                     ),
                   ),
-                );
-              },
-            ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _quantityController,
+                      decoration: InputDecoration(labelText: 'Quantity'),
+                    ),
+                  ),
+                  ElevatedButton(
+                    child: Text("Add"),
+                    onPressed: () {
+                      final name = _itemController.text.trim();
+                      final qty = _quantityController.text.trim();
+                      if (name.isNotEmpty && qty.isNotEmpty) {
+                        _addItem(name, qty);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              Expanded(
+                child: isWide
+                    ? Row(
+                  children: [
+                    Expanded(child: _buildItemList(isWide)),
+                    VerticalDivider(),
+                    Expanded(child: selectedItem != null ? _buildDetailsPage() : Container()),
+                  ],
+                )
+                    : selectedItem == null
+                    ? _buildItemList(isWide)
+                    : _buildDetailsPage(),
+              ),
+            ]),
           ),
-        ]),
-      ),
+        );
+      },
     );
   }
 
-  void _confirmDelete(ShoppingItem item) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Delete "${item.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('No')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteItem(item);
-            },
-            child: Text('Yes'),
+  Widget _buildItemList(bool isWide) {
+    return items.isEmpty
+        ? Center(child: Text("No items added."))
+        : ListView.builder(
+      itemCount: items.length,
+      itemBuilder: (_, index) {
+        final item = items[index];
+        return GestureDetector(
+          onTap: () => _selectItem(item),
+          child: Card(
+            child: ListTile(
+              title: Text(item.name),
+              trailing: Text('Qty: ${item.quantity}'),
+            ),
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailsPage() {
+    if (selectedItem == null) return SizedBox.shrink();
+    return Card(
+      margin: EdgeInsets.all(8),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Item: ${selectedItem!.name}", style: TextStyle(fontSize: 20)),
+            SizedBox(height: 8),
+            Text("Quantity: ${selectedItem!.quantity}", style: TextStyle(fontSize: 18)),
+            SizedBox(height: 8),
+            Text("ID: ${selectedItem!.id}", style: TextStyle(fontSize: 16, color: Colors.grey)),
+            SizedBox(height: 24),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () => _deleteItem(selectedItem!),
+                  child: Text("Delete"),
+                ),
+                SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: _closeDetails,
+                  child: Text("Close"),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
