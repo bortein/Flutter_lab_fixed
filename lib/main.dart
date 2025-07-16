@@ -1,80 +1,154 @@
 import 'package:flutter/material.dart';
+import 'app_database.dart';
+import 'shopping_item.dart';
 
-void main() => runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final database = await $FloorAppDatabase.databaseBuilder('shopping.db').build();
+  runApp(MyApp(database));
+}
 
 class MyApp extends StatelessWidget {
+  final AppDatabase database;
+
+  const MyApp(this.database, {super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Login Page',
-      home: LoginPage(),
+      title: 'Shopping List',
+      debugShowCheckedModeBanner: false,
+      home: MyHomePage(title: 'Shopping List', database: database),
     );
   }
 }
 
-class LoginPage extends StatefulWidget {
+class MyHomePage extends StatefulWidget {
+  final String title;
+  final AppDatabase database;
+
+  const MyHomePage({super.key, required this.title, required this.database});
+
   @override
-  _LoginPageState createState() => _LoginPageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final TextEditingController loginController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+class _MyHomePageState extends State<MyHomePage> {
+  late TextEditingController _itemController;
+  late TextEditingController _quantityController;
 
-  // Initial image path
-  String imageSource = "images/question-mark.jpg";
+  List<ShoppingItem> items = [];
 
-  void handleLogin() {
-    String password = passwordController.text;
+  @override
+  void initState() {
+    super.initState();
+    _itemController = TextEditingController();
+    _quantityController = TextEditingController();
+    _loadItems();
+  }
 
-    setState(() {//step 4-5
-      if (password == 'QWERTY123') {
-        imageSource = 'images/idea.jpg';
-      } else {
-        imageSource = 'images/stop.jpg';
-      }
-    });
+  Future<void> _loadItems() async {
+    final dao = widget.database.itemDao;
+    final loadedItems = await dao.findAllItems();
+    setState(() => items = loadedItems);
+  }
+
+  Future<void> _addItem(String name, String qty) async {
+    final dao = widget.database.itemDao;
+    final newItem = ShoppingItem(name: name, quantity: qty);
+    await dao.insertItem(newItem);
+    _itemController.clear();
+    _quantityController.clear();
+    _loadItems();
+  }
+
+  Future<void> _deleteItem(ShoppingItem item) async {
+    final dao = widget.database.itemDao;
+    await dao.deleteItem(item);
+    _loadItems();
+  }
+
+  @override
+  void dispose() {
+    _itemController.dispose();
+    _quantityController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login')),
+      appBar: AppBar(title: Text(widget.title)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: loginController,
-              decoration: InputDecoration(
-                labelText: 'Login name',
-                border: OutlineInputBorder(),
+        child: Column(children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _itemController,
+                  decoration: InputDecoration(labelText: 'Item'),
+                ),
               ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
+              SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _quantityController,
+                  decoration: InputDecoration(labelText: 'Quantity'),
+                ),
               ),
-              obscureText: true,//step 1
+              ElevatedButton(
+                child: Text("Add"),
+                onPressed: () {
+                  final name = _itemController.text.trim();
+                  final qty = _quantityController.text.trim();
+                  if (name.isNotEmpty && qty.isNotEmpty) {
+                    _addItem(name, qty);
+                  }
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: items.isEmpty
+                ? Center(child: Text("No items added."))
+                : ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (_, index) {
+                final item = items[index];
+                return GestureDetector(
+                  onLongPress: () => _confirmDelete(item),
+                  child: Card(
+                    child: ListTile(
+                      title: Text(item.name),
+                      trailing: Text('Qty: ${item.quantity}'),
+                    ),
+                  ),
+                );
+              },
             ),
-            SizedBox(height: 24),
-            ElevatedButton(//step 2
-              onPressed: handleLogin,
-              child: Text('Login'),
-            ),
-            SizedBox(height: 24),
-            Image.asset(//step 3
-              imageSource,
-              width: 300,
-              height: 300,
-              fit: BoxFit.contain,
-            ),
-          ],
-        ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  void _confirmDelete(ShoppingItem item) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Delete "${item.name}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('No')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteItem(item);
+            },
+            child: Text('Yes'),
+          ),
+        ],
       ),
     );
   }
